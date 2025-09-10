@@ -1,23 +1,24 @@
-// Fix: Update to Firebase v9 modular syntax
+// src/firebaseConfig.ts
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 // Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDRHqqgfR4mrkeFOcnU_LxjcTtdfaksaNA",
-  authDomain: "skyon-bc49d.firebaseapp.com",
-  databaseURL: "https://skyon-bc49d-default-rtdb.firebaseio.com",
-  projectId: "skyon-bc49d",
-  storageBucket: "skyon-bc49d.appspot.com",
-  messagingSenderId: "714161476555",
-  appId: "1:714161476555:web:716607c5271ec2e2769c4e",
-  measurementId: "G-721GWE0EFM"
+  apiKey: "AIzaSyB-IwB0QI1pb_ndQi5GMANOWNBuSz0bEZw",
+  authDomain: "skyon-app-us.firebaseapp.com",
+  databaseURL: "https://skyon-app-us-default-rtdb.firebaseio.com",
+  projectId: "skyon-app-us",
+  storageBucket: "skyon-app-us.firebasestorage.app",
+  messagingSenderId: "373148612723",
+  appId: "1:373148612723:web:2bf25d7b59291ae8959206",
+  measurementId: "G-QWQQF5RBMJ"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Fix: Export auth and database instances initialized with v9 functions
 export const auth = getAuth(app);
 export const db = getDatabase(app);

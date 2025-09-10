@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocalization } from '../contexts/LocalizationContext';
 import Icon from '../components/Icon';
@@ -22,14 +21,10 @@ const Home: React.FC = () => {
           getCollection<Store>('stores'),
           getCollection<DailyDish>('dailyDishes'),
         ]);
-        // Simple sorting for demo, could be complex query
-        const sortedListings = listings.sort((a, b) => (b as any).createdAt - (a as any).createdAt);
-        const sortedStores = stores.sort((a, b) => (b as any).createdAt - (a as any).createdAt);
-        const sortedDishes = dishes.sort((a, b) => (b as any).createdAt - (a as any).createdAt);
-
-        setFeaturedListing(sortedListings[0] || null);
-        setFeaturedStore(sortedStores[0] || null);
-        setLatestDishes(sortedDishes.slice(0, 1));
+        
+        setFeaturedListing(listings[0] || null);
+        setFeaturedStore(stores[0] || null);
+        setLatestDishes(dishes.slice(0, 1));
       } catch (error) {
         console.error("Error fetching home page data:", error);
       } finally {

@@ -1,4 +1,5 @@
-// Fix: Use Firebase v9 modular syntax
+// src/services/authService.ts
+
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -12,19 +13,29 @@ import { User } from '../types';
 
 export const authService = {
   onAuthStateChanged: (callback: (user: User | null) => void): (() => void) => {
-    // Fix: Use v9 onAuthStateChanged method
     return onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // User is signed in, get their profile from Realtime Database
+        // User is signed in, get their profile from our Realtime Database
         const userProfile = await authService.getUserProfile(firebaseUser.uid);
+
         if (userProfile) {
-          callback(userProfile);
+          // If a profile exists, combine it with the live email from Firebase Auth
+          // This ensures the email is never missing.
+          const combinedUser = {
+            ...userProfile, // Profile data from DB (block, flatNumber, etc.)
+            uid: firebaseUser.uid,
+            email: firebaseUser.email, // ALWAYS use the email from the auth provider
+          };
+          callback(combinedUser);
         } else {
-          // This case happens right after sign-up, before profile is created.
+          // This happens right after sign-up, before a profile is created in our DB.
+          // We create a temporary user object to proceed to the profile page.
           callback({
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
+            block: undefined, // Explicitly undefined
+            flatNumber: undefined, // Explicitly undefined
           });
         }
       } else {
@@ -35,7 +46,6 @@ export const authService = {
   },
 
   signInWithGoogle: async (): Promise<FirebaseUser> => {
-    // Fix: Use v9 GoogleAuthProvider and signInWithPopup
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     if (!result.user) {
@@ -45,34 +55,32 @@ export const authService = {
   },
 
   signOut: async (): Promise<void> => {
-    // Fix: Use v9 signOut method
     await firebaseSignOut(auth);
   },
 
+  // This is used for NEW users completing their profile for the first time
   createUserProfile: async (
-    // Fix: Adjusted type to match what's available in ProfilePage
     user: { uid: string; email: string | null },
     profileData: { displayName: string | null; block: string; flatNumber: string }
   ): Promise<void> => {
-    // Fix: Use v9 Realtime Database syntax
     const userRef = ref(db, `users/${user.uid}`);
     await set(userRef, {
-      email: user.email,
+      email: user.email, // Make sure email is saved on creation
       ...profileData,
     });
   },
 
+  // This is used for EXISTING users updating their profile
   updateUserProfile: async (
     uid: string,
     profileData: { displayName: string; block: string; flatNumber: string }
   ): Promise<void> => {
-    // Fix: Use v9 Realtime Database syntax with `update` to avoid deleting existing data
     const userRef = ref(db, `users/${uid}`);
+    // "update" only changes the fields provided, it doesn't delete others
     await update(userRef, profileData);
   },
 
   getUserProfile: async (uid: string): Promise<User | null> => {
-    // Fix: Use v9 Realtime Database syntax
      const userRef = ref(db, `users/${uid}`);
      const snapshot = await get(userRef);
      if(snapshot.exists()) {

@@ -16,14 +16,14 @@ export interface User {
 }
 
 export interface UserInfo {
+  uid: string;
   name: string;
   block: string;
   flatNumber: string;
 }
 
-
 export interface Listing {
-  id: number;
+  id: string;
   title: string;
   description: string;
   price: number | 'Free';
@@ -31,7 +31,9 @@ export interface Listing {
   category: string;
   condition: ListingCondition;
   imageUrl: string;
-  seller: UserInfo;
+  owner: UserInfo;
+  whatsappNumber: string;
+  phoneNumber: string;
 }
 
 export interface Review {
@@ -42,13 +44,16 @@ export interface Review {
 }
 
 export interface Vendor {
-  id: number;
+  id: string;
   name: string;
   service: string;
   description: string;
   rating: number;
   imageUrl: string;
   reviews: Review[];
+  owner: UserInfo;
+  whatsappNumber: string;
+  phoneNumber: string;
 }
 
 export interface Product {
@@ -56,10 +61,11 @@ export interface Product {
   name: string;
   price: number;
   imageUrl: string;
+  description?: string;
 }
 
 export interface Store {
-  id: number;
+  id: string;
   name: string;
   category: 'Home Food' | 'Handmade Crafts' | 'Boutique' | 'Groceries';
   owner: UserInfo,
@@ -71,7 +77,7 @@ export interface Store {
 }
 
 export interface CommunityEvent {
-  id: number;
+  id: string;
   title: string;
   date: string;
   time: string;
@@ -79,17 +85,18 @@ export interface CommunityEvent {
   description: string;
   imageUrl: string;
   rsvps: number;
+  owner: UserInfo;
 }
 
 export interface LostAndFoundItem {
-  id: number;
+  id: string;
   title: string;
   description: string;
   status: 'Lost' | 'Found';
   location: string;
   date: string;
   imageUrl: string;
-  contact: UserInfo;
+  owner: UserInfo;
 }
 
 export interface EmergencyContact {
@@ -100,7 +107,7 @@ export interface EmergencyContact {
 }
 
 export interface MedicalService {
-  id: number;
+  id: string;
   name: string;
   type: 'Hospital' | 'Clinic';
   address: string;
@@ -109,36 +116,41 @@ export interface MedicalService {
 }
 
 export interface Doctor {
-  id: number;
+  id: string;
   name: string;
   specialty: string;
   location: string;
   availability: string;
   isResident: boolean;
+  imageUrl: string;
+  phoneNumber: string;
+  whatsappNumber: string;
 }
 
 export interface CarpoolRide {
-  id: number;
+  id: string;
   driver: UserInfo;
   from: string;
   to: string;
   date: string;
   time: string;
   seatsAvailable: number;
-  contact: string;
+  whatsappNumber: string;
+  phoneNumber: string;
 }
 
 export interface TransportRequest {
-    id: number;
-    requester: UserInfo;
-    requestType: 'Need a Ride' | 'Need a Driver';
-    description: string;
-    date: string;
-    contact: string;
+  id: string;
+  requester: UserInfo;
+  requestType: 'Need a Ride' | 'Need a Driver';
+  description: string;
+  date: string;
+  whatsappNumber: string;
+  phoneNumber: string;
 }
 
 export interface ParkingViolation {
-  id: number;
+  id: string;
   vehicleNumber: string;
   location: string;
   description: string;
@@ -148,12 +160,15 @@ export interface ParkingViolation {
 }
 
 export interface DailyDish {
-  id: number;
+  id: string;
   name: string;
   price: number;
   imageUrl: string;
   seller: UserInfo;
   postedAt: string;
+  createdAt: number;
+  whatsappNumber: string;
+  phoneNumber: string;
 }
 
 export interface DishTemplate {
@@ -162,9 +177,9 @@ export interface DishTemplate {
   price: number;
 }
 
-
 export type Translations = {
   [key in Language]: {
     [key: string]: string;
   };
 };
+

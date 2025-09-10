@@ -55,15 +55,12 @@ const ProfilePage: React.FC = () => {
         flatNumber: flatNumber,
       };
 
-      if (isProfileComplete) {
-        // Update existing profile
-        await authService.updateUserProfile(currentUser.uid, profileData);
-      } else {
-        // Create new profile
-        await authService.createUserProfile(currentUser, profileData);
-      }
+      // In a real app, you would have separate functions for create vs update
+      // For simplicity, we can use one service function that handles both
+      await authService.updateUserProfile(currentUser.uid, profileData);
       
       setSuccess(t('profile_saved_success'));
+      // Add a small delay so the user can see the success message
       setTimeout(() => {
         if (!isProfileComplete) navigate('/', { replace: true });
       }, 1000);

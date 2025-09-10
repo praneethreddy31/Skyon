@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
-import { mockEvents } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
 import { CommunityEvent } from '../types';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Icon from '../components/Icon';
-// Fix: Use the useLocalization hook instead of importing LocalizationContext from App.
 import { useLocalization } from '../contexts/LocalizationContext';
+import { getCollection, updateDocument } from '../services/databaseService'; // Assuming updateDocument exists
 
 const EventCard: React.FC<{ event: CommunityEvent, onClick: () => void }> = ({ event, onClick }) => {
     return (
@@ -26,8 +25,7 @@ const EventCard: React.FC<{ event: CommunityEvent, onClick: () => void }> = ({ e
     );
 };
 
-const EventDetailModal: React.FC<{ event: CommunityEvent | null; onClose: () => void, onRsvp: (eventId: number) => void }> = ({ event, onClose, onRsvp }) => {
-    // Fix: Use the useLocalization hook.
+const EventDetailModal: React.FC<{ event: CommunityEvent | null; onClose: () => void, onRsvp: (event: CommunityEvent) => void }> = ({ event, onClose, onRsvp }) => {
     const { t } = useLocalization();
     const [isRsvpd, setIsRsvpd] = useState(false);
 
@@ -35,7 +33,7 @@ const EventDetailModal: React.FC<{ event: CommunityEvent | null; onClose: () => 
 
     const handleRsvp = () => {
         if (!isRsvpd) {
-            onRsvp(event.id);
+            onRsvp(event);
             setIsRsvpd(true);
         }
     }
@@ -61,24 +59,55 @@ const EventDetailModal: React.FC<{ event: CommunityEvent | null; onClose: () => 
 };
 
 const Events: React.FC = () => {
-    const [events, setEvents] = useState<CommunityEvent[]>(mockEvents);
+    const [events, setEvents] = useState<CommunityEvent[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedEvent, setSelectedEvent] = useState<CommunityEvent | null>(null);
-    // Fix: Use the useLocalization hook.
     const { t } = useLocalization();
 
-    const handleRsvp = (eventId: number) => {
-        setEvents(prevEvents => prevEvents.map(e => e.id === eventId ? {...e, rsvps: e.rsvps + 1} : e));
+    const fetchEvents = async () => {
+        setLoading(true);
+        try {
+            const data = await getCollection<CommunityEvent>('events');
+            setEvents(data);
+        } catch (error) {
+            console.error("Error fetching events:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchEvents();
+    }, []);
+
+    const handleRsvp = async (eventToUpdate: CommunityEvent) => {
+        try {
+            // Optimistically update the UI
+            setEvents(prevEvents => prevEvents.map(e =>
+                e.id === eventToUpdate.id ? { ...e, rsvps: e.rsvps + 1 } : e
+            ));
+            // Update the document in Firestore, converting the id to a string
+            await updateDocument('events', eventToUpdate.id.toString(), { rsvps: eventToUpdate.rsvps + 1 });
+        } catch (error) {
+            console.error("Failed to RSVP:", error);
+            // Revert UI change on error
+            setEvents(prevEvents => prevEvents.map(e =>
+                e.id === eventToUpdate.id ? { ...e, rsvps: e.rsvps } : e
+            ));
+        }
     };
 
     return (
         <div>
             <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">{t('events_title')}</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {events.map((event) => (
-                    <EventCard key={event.id} event={event} onClick={() => setSelectedEvent(event)} />
-                ))}
-            </div>
-            <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} onRsvp={handleRsvp}/>
+            {loading ? <p>Loading events...</p> :
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {events.map((event) => (
+                        <EventCard key={event.id} event={event} onClick={() => setSelectedEvent(event)} />
+                    ))}
+                </div>
+            }
+            <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} onRsvp={handleRsvp} />
         </div>
     );
 };

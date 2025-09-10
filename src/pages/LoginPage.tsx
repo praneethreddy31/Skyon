@@ -13,6 +13,8 @@ const LoginPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
+      // If user is logged in, check if profile is complete.
+      // If not, redirect to profile, otherwise to home.
       if (!currentUser.block || !currentUser.flatNumber) {
         navigate('/profile', { replace: true });
       } else {

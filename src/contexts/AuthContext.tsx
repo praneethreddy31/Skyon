@@ -8,13 +8,11 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-// Provide a default value matching the context type
 const AuthContext = createContext<AuthContextType>({
   currentUser: null,
   loading: true,
-  logout: () => Promise.resolve(),
+  logout: async () => {},
 });
-
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -29,7 +27,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onAuthStateChanged returns an unsubscribe function
     const unsubscribe = authService.onAuthStateChanged(user => {
       setCurrentUser(user);
       setLoading(false);
@@ -40,7 +37,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     await authService.signOut();
-    setCurrentUser(null);
   };
 
   const value = {

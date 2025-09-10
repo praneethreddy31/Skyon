@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store } from '../types';
@@ -54,7 +53,7 @@ const Bazaar: React.FC = () => {
     setLoading(true);
     try {
         const data = await getCollection<Store>('stores');
-        setStores(data.sort((a, b) => (b as any).createdAt - (a as any).createdAt));
+        setStores(data);
     } catch (error) {
         console.error("Error fetching stores:", error);
     } finally {

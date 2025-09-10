@@ -1,20 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockLostFoundItems } from '../data/mockData';
-import { LostAndFoundItem } from '../types';
+import { LostAndFoundItem, UserInfo } from '../types';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
 import { useLocalization } from '../contexts/LocalizationContext';
 import { useAuth } from '../contexts/AuthContext';
+import { getCollection, addDocument } from '../services/databaseService';
 
-
-const ReportItemModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+const ReportItemModal: React.FC<{ isOpen: boolean; onClose: () => void; onReport: () => void }> = ({ isOpen, onClose, onReport }) => {
     const { t } = useLocalization();
+    const { currentUser } = useAuth();
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!currentUser || !currentUser.block) return;
+        setLoading(true);
+
+        const formData = new FormData(e.currentTarget);
+        const userInfo: UserInfo = {
+            name: currentUser.displayName || 'Unknown',
+            block: currentUser.block,
+            flatNumber: currentUser.flatNumber || '000',
+        };
+
+        const itemData = {
+            status: formData.get('status') as 'Lost' | 'Found',
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            location: 'Community Area', // Placeholder
+            date: new Date().toLocaleDateString(),
+            imageUrl: 'https://picsum.photos/seed/item' + Math.random() + '/200/200',
+            contact: userInfo,
+        };
+
+        try {
+            await addDocument('lostAndFoundItems', itemData, userInfo);
+            onReport();
+            onClose();
+        } catch (error) {
+            console.error("Error reporting item:", error);
+            alert("Failed to report item.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={t('lost_and_found_report_item')}>
-             <form className="space-y-4">
+             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700">I have...</label>
                     <div className="mt-2 flex gap-4">
@@ -30,17 +66,13 @@ const ReportItemModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ i
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">{t('form_title')}</label>
-                    <input type="text" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-[#3b5978] focus:border-[#3b5978]"/>
+                    <input name="title" type="text" required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-[#3b5978] focus:border-[#3b5978]"/>
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">{t('form_description')}</label>
-                    <textarea rows={3} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-[#3b5978] focus:border-[#3b5978]"></textarea>
+                    <textarea name="description" rows={3} required className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-[#3b5978] focus:border-[#3b5978]"></textarea>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">{t('form_add_photo')}</label>
-                    <input type="file" className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-[#3b5978] hover:file:bg-sky-100"/>
-                </div>
-                <Button type="submit" className="w-full">Submit Report</Button>
+                <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Submitting...' : 'Submit Report'}</Button>
             </form>
         </Modal>
     );
@@ -48,11 +80,28 @@ const ReportItemModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ i
 
 
 const LostAndFound: React.FC = () => {
-    const [items, setItems] = useState<LostAndFoundItem[]>(mockLostFoundItems);
+    const [items, setItems] = useState<LostAndFoundItem[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { t } = useLocalization();
     const { currentUser } = useAuth();
     const navigate = useNavigate();
+
+    const fetchItems = async () => {
+        setLoading(true);
+        try {
+            const data = await getCollection<LostAndFoundItem>('lostAndFoundItems');
+            setItems(data);
+        } catch (error) {
+            console.error("Error fetching items:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        fetchItems();
+    }, []);
 
     const handleReportClick = () => {
         if (currentUser) {
@@ -70,6 +119,7 @@ const LostAndFound: React.FC = () => {
                     {t('lost_and_found_report_item')}
                 </Button>
             </div>
+            {loading ? <p>Loading items...</p> :
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {items.map(item => (
                     <Card key={item.id} className="flex">
@@ -85,13 +135,14 @@ const LostAndFound: React.FC = () => {
                             <div className="text-xs text-gray-400 mt-2">
                                 <p>Location: {item.location}</p>
                                 <p>{item.date}</p>
-                                <p className="mt-1 font-semibold text-gray-600">Contact: {`${item.contact.name} ${item.contact.block && `(${item.contact.block}-${item.contact.flatNumber})`}`}</p>
+                                <p className="mt-1 font-semibold text-gray-600">Contact: {`${item.contact.name} (${item.contact.block}-${item.contact.flatNumber})`}</p>
                             </div>
                         </div>
                     </Card>
                 ))}
             </div>
-            <ReportItemModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            }
+            <ReportItemModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onReport={fetchItems} />
         </div>
     );
 };
